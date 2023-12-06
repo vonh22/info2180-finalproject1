@@ -41,4 +41,4 @@ create table notes (
     primary key (id)
 );
 
-insert into users (firstname, lastname, password, email, role) values ("Admin", "Person", HASHBYTES("SHA_256"."password123"), "admin@project2.com", "Admin");
+insert into users (firstname, lastname, password, email, role) values ("Admin", "Person", "password123", "admin@project2.com", "Admin");

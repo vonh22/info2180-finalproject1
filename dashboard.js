@@ -1,39 +1,59 @@
-window.onload = async (k) => {
-    const result = document.querySelector('#results');
-    let filters = document.querySelectorAll(".filters li");
-    let currentEl = "";
-    k.preventDefault();
+window.onload = async () => {
+    const resultContainer = document.querySelector('#results');
+    const filters = document.querySelectorAll(".filters li");
 
-    const handleActive = async (k) => {
-        k.preventDefault();
-        filters.forEach(el => {
-            el.classList.remove("current");
-        })
-        k.currentTarget.classList.add("current");
-        currentEl = k.currentTarget;
+    const loadContacts = async (filter = 'All') => {
+        resultContainer.innerHTML = '';
 
-        let response = await fetch(`dashboard.php
-        ?q=${currentEl.querySelector("a").text}`);
+        try {
+            const response = await fetch(`dashboard.php?q=${encodeURIComponent(filter)}`);
+            if (response.ok) {
+                const contacts = await response.json();
 
-        if(response.status === 200){
-            let data = await response.text();
-            result.innerHTML = data;
-        } else {
-            alert("There was a problem processing your request.");
+                let tableHTML = '<table><thead><tr><th>Name</th><th>Email</th><th>Company</th><th>Type</th><th></th></tr></thead><tbody>';
+                contacts.forEach(contact => {
+
+                    let typeClass = '';
+                    if (contact.type === 'Sales Lead') {
+                        typeClass = 'type-indicator sales-lead';
+                    } else if (contact.type === 'Support') {
+                        typeClass = 'type-indicator support';
+                    }
+
+                    tableHTML += `
+                        <tr>
+                            <td class="name">${contact.name}</td>
+                            <td>${contact.email}</td>
+                            <td>${contact.company}</td>
+                            <td><span class="${typeClass}">${contact.type}</span></td>
+                            <td><a href="view_contact.php?id=${contact.id}" class="view-link">View</a></td>
+                        </tr>
+                    `;
+                });
+                tableHTML += '</tbody></table>';
+
+                resultContainer.innerHTML = tableHTML;
+            } else {
+                throw new Error('Failed to fetch contacts');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            resultContainer.innerText = 'Failed to load contacts.';
         }
-    }
+    };
 
-    filters.forEach(el => {
-        el.addEventListener('click', handleActive);
-    })
+    await loadContacts();
 
-    let response = await fetch(`dashboard.php`);
+    filters.forEach(filter => {
+        filter.addEventListener('click', async (event) => {
+            event.preventDefault();
+            const filterType = event.currentTarget.textContent.trim();
 
-        if(response.status === 200){
-            let data = await response.text();
-            result.innerHTML = data;
-        } else {
-            alert("There was a problem processing your request.");
-        }
+            filters.forEach(f => f.classList.remove('current'));
 
-}
+            event.currentTarget.classList.add('current');
+
+            await loadContacts(filterType);
+        });
+    });
+};
